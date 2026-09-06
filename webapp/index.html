@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>GAMECARD_KG — магазин</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{
+  --bg:#0a0b14; --bg2:#11132250; --card:#171a2b; --card2:#1e2238;
+  --line:#272c45; --txt:#f0f2ff; --muted:#8b91b5;
+  --ps:#2e6ff2; --xbox:#16c60c; --steam:#66c0f4; --sub:#ffb020; --coin:#ff4d8d;
+  --accent:#6c5ce7; --ok:#22d47b; --danger:#ff4d6d;
+  --r:18px; --safe-b:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--txt);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Roboto,sans-serif;
+  overscroll-behavior-y:none}
+body{padding-bottom:calc(112px + var(--safe-b));min-height:100vh}
+
+/* ── живой фон ── */
+.aurora{position:fixed;inset:0;z-index:-1;overflow:hidden}
+.aurora i{position:absolute;display:block;border-radius:50%;filter:blur(70px);opacity:.5;
+  animation:float 18s ease-in-out infinite}
+.aurora i:nth-child(1){width:280px;height:280px;background:#2e6ff2;top:-60px;left:-60px}
+.aurora i:nth-child(2){width:240px;height:240px;background:#6c5ce7;top:30%;right:-80px;animation-delay:-6s}
+.aurora i:nth-child(3){width:260px;height:260px;background:#ff4d8d;bottom:-40px;left:10%;animation-delay:-12s;opacity:.35}
+@keyframes float{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-40px) scale(1.15)}66%{transform:translate(-25px,25px) scale(.9)}}
+
+/* ── шапка ── */
+header{position:sticky;top:0;z-index:20;padding:14px 16px 10px;
+  background:linear-gradient(180deg,rgba(10,11,20,.96),rgba(10,11,20,.75) 70%,transparent);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;font-size:20px;
+  background:linear-gradient(135deg,var(--accent),var(--ps));box-shadow:0 6px 20px #6c5ce755;
+  animation:pulse 3.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 6px 20px #6c5ce755}50%{box-shadow:0 6px 30px #6c5ce7aa}}
+.brand h1{margin:0;font-size:16px;letter-spacing:.4px;font-weight:800}
+.brand p{margin:1px 0 0;font-size:11px;color:var(--muted)}
+.chips{margin-left:auto;display:flex;gap:6px;align-items:center}
+.chip{font-size:11px;font-weight:700;padding:6px 10px;border-radius:999px;
+  background:var(--card2);border:1px solid var(--line);white-space:nowrap}
+.chip.gold{background:linear-gradient(135deg,#3a2a0e,#241a08);border-color:#6b4d12;color:#ffd268}
+
+/* ── герой ── */
+.hero{display:flex;gap:10px;overflow-x:auto;padding:4px 16px 14px;scroll-snap-type:x mandatory;
+  scrollbar-width:none}
+.hero::-webkit-scrollbar{display:none}
+.slide{scroll-snap-align:center;flex:0 0 84%;border-radius:20px;padding:16px;position:relative;
+  overflow:hidden;min-height:104px;display:flex;flex-direction:column;justify-content:center;
+  animation:rise .5s backwards}
+.slide:nth-child(2){animation-delay:.06s}.slide:nth-child(3){animation-delay:.12s}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.slide::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(100deg,transparent 20%,rgba(255,255,255,.18) 45%,transparent 70%);
+  transform:translateX(-120%);animation:sheen 4.5s ease-in-out infinite}
+@keyframes sheen{0%,60%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+.slide h3{margin:0 0 4px;font-size:17px;font-weight:850}
+.slide p{margin:0;font-size:12px;opacity:.85;max-width:80%}
+.slide .tag{position:absolute;top:12px;right:12px;font-size:10px;font-weight:800;
+  padding:4px 8px;border-radius:999px;background:rgba(0,0,0,.35);backdrop-filter:blur(6px)}
+.s1{background:linear-gradient(120deg,#1b3ea8,#2e6ff2 60%,#6ea8ff)}
+.s2{background:linear-gradient(120deg,#0d5c08,#16c60c 60%,#7ff07a)}
+.s3{background:linear-gradient(120deg,#8a2b00,#ff8a00 55%,#ffd166)}
+
+/* ── табы ── */
+.tabs{display:flex;gap:8px;overflow-x:auto;padding:0 16px 12px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;padding:10px 14px;border-radius:14px;background:var(--card);
+  border:1px solid var(--line);font-size:13px;font-weight:700;color:var(--muted);
+  display:flex;align-items:center;gap:6px;transition:.2s;cursor:pointer}
+.tab.on{color:#fff;transform:translateY(-1px)}
+.tab.on[data-k=ps]{background:linear-gradient(135deg,#1b3ea8,#2e6ff2);border-color:#4d85ff;box-shadow:0 6px 18px #2e6ff244}
+.tab.on[data-k=xbox]{background:linear-gradient(135deg,#0d5c08,#16c60c);border-color:#3ae032;box-shadow:0 6px 18px #16c60c44}
+.tab.on[data-k=steam]{background:linear-gradient(135deg,#1b2838,#3d6d94);border-color:#66c0f4;box-shadow:0 6px 18px #66c0f444}
+.tab.on[data-k=sub]{background:linear-gradient(135deg,#7a5200,#ffb020);border-color:#ffd268;box-shadow:0 6px 18px #ffb02044}
+.tab.on[data-k=coin]{background:linear-gradient(135deg,#8a0f3d,#ff4d8d);border-color:#ff86b3;box-shadow:0 6px 18px #ff4d8d44}
+
+section{padding:0 16px}
+.lbl{font-size:11px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;
+  color:var(--muted);margin:16px 0 9px;display:flex;align-items:center;gap:8px}
+.lbl::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+
+/* ── регионы ── */
+.regions{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.regions::-webkit-scrollbar{display:none}
+.rg{flex:0 0 auto;padding:9px 13px;border-radius:13px;background:var(--card);
+  border:1px solid var(--line);font-size:13px;font-weight:600;transition:.18s;cursor:pointer}
+.rg .cur{font-size:10px;color:var(--muted);margin-left:4px}
+.rg.on{background:linear-gradient(135deg,var(--accent),#8f7bff);border-color:#a99bff;color:#fff;
+  box-shadow:0 6px 18px #6c5ce744;transform:translateY(-1px)}
+.rg.on .cur{color:#e6e0ff}
+
+/* ── карточки номиналов ── */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px}
+.card{position:relative;border-radius:var(--r);padding:13px 11px;background:var(--card);
+  border:1px solid var(--line);cursor:pointer;transition:transform .16s,border-color .16s,box-shadow .16s;
+  overflow:hidden;animation:pop .32s backwards}
+@keyframes pop{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
+.card::before{content:"";position:absolute;inset:0;opacity:0;transition:.2s;
+  background:radial-gradient(120% 90% at 50% 0%,var(--glow,#6c5ce7)33,transparent 70%)}
+.card:active{transform:scale(.95)}
+.card.on{border-color:var(--glow,#6c5ce7);box-shadow:0 8px 26px color-mix(in srgb,var(--glow,#6c5ce7) 35%,transparent)}
+.card.on::before{opacity:1}
+.card .den{font-size:21px;font-weight:900;letter-spacing:-.5px;position:relative}
+.card .den small{font-size:11px;font-weight:700;color:var(--muted);margin-left:2px}
+.card .price{margin-top:6px;font-size:13px;font-weight:800;color:var(--ok);position:relative}
+.card .old{font-size:11px;color:var(--muted);text-decoration:line-through;margin-left:5px;font-weight:600}
+.badge{position:absolute;top:0;right:0;font-size:9px;font-weight:900;padding:3px 7px;
+  border-bottom-left-radius:10px;letter-spacing:.5px}
+.badge.hit{background:linear-gradient(135deg,#ff4d6d,#ff9068);color:#fff}
+.badge.best{background:linear-gradient(135deg,#ffb020,#ffd268);color:#2a1c00}
+
+/* ── товары каталога ── */
+.items{display:flex;flex-direction:column;gap:10px}
+.item{display:flex;align-items:center;gap:12px;padding:13px;border-radius:var(--r);
+  background:var(--card);border:1px solid var(--line);cursor:pointer;transition:.18s;
+  animation:pop .32s backwards;position:relative;overflow:hidden}
+.item:active{transform:scale(.98)}
+.item.on{border-color:var(--glow,#ffb020);box-shadow:0 8px 26px color-mix(in srgb,var(--glow,#ffb020) 30%,transparent)}
+.item .ic{width:46px;height:46px;flex:0 0 46px;border-radius:14px;display:grid;place-items:center;
+  font-size:23px;background:var(--card2);border:1px solid var(--line)}
+.item .tx{flex:1;min-width:0}
+.item .tx b{display:block;font-size:14px;font-weight:800}
+.item .tx span{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.item .pr{text-align:right;font-size:15px;font-weight:900;color:var(--ok);white-space:nowrap}
+
+/* ── свой номинал ── */
+.custom{display:flex;gap:8px;margin-top:10px}
+.custom input{flex:1;background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:13px 14px;color:var(--txt);font-size:15px;font-weight:700;outline:none;transition:.2s}
+.custom input:focus{border-color:var(--accent);box-shadow:0 0 0 3px #6c5ce733}
+.btn{padding:13px 18px;border-radius:14px;border:none;font-size:14px;font-weight:800;
+  background:var(--card2);color:var(--txt);cursor:pointer;transition:.18s;border:1px solid var(--line)}
+.btn:active{transform:scale(.96)}
+.btn.pri{background:linear-gradient(135deg,var(--accent),#8f7bff);border-color:transparent;color:#fff}
+
+/* ── корзина ── */
+.cart{margin-top:14px;border-radius:var(--r);border:1px solid var(--line);background:var(--bg2);
+  backdrop-filter:blur(10px);overflow:hidden}
+.crow{display:flex;align-items:center;gap:10px;padding:12px 13px;border-bottom:1px solid var(--line)}
+.crow:last-child{border-bottom:none}
+.crow .cn{flex:1;min-width:0}
+.crow .cn b{font-size:13px;display:block}
+.crow .cn span{font-size:11px;color:var(--muted)}
+.qty{display:flex;align-items:center;gap:8px;background:var(--card);border-radius:11px;padding:3px}
+.qty button{width:26px;height:26px;border:none;border-radius:8px;background:var(--card2);
+  color:var(--txt);font-size:16px;font-weight:800;cursor:pointer;line-height:1}
+.qty span{min-width:16px;text-align:center;font-weight:800;font-size:13px}
+.rm{background:none;border:none;color:var(--danger);font-size:17px;cursor:pointer;padding:2px 4px}
+
+.promo{display:flex;gap:8px;margin-top:10px}
+.promo input{flex:1;background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:12px 14px;color:var(--txt);font-size:14px;font-weight:700;outline:none;text-transform:uppercase}
+.promo input.ok{border-color:var(--ok);box-shadow:0 0 0 3px #22d47b26}
+.promo input.bad{border-color:var(--danger);animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+.sum{margin-top:12px;padding:14px;border-radius:var(--r);background:var(--card);border:1px solid var(--line)}
+.sl{display:flex;justify-content:space-between;font-size:13px;margin-bottom:8px;color:var(--muted)}
+.sl b{color:var(--txt);font-weight:700}
+.sl.tot{margin:10px 0 0;padding-top:11px;border-top:1px dashed var(--line);font-size:16px;color:var(--txt)}
+.sl.tot b{font-size:20px;font-weight:900;color:var(--ok)}
+.sl.disc b{color:var(--ok)}
+
+.note{margin-top:12px;padding:12px 13px;border-radius:14px;font-size:12px;line-height:1.55;
+  background:#1a1428;border:1px solid #3a2a52;color:#c9b8ff}
+.note b{color:#fff}
+
+/* ── нижняя панель (fallback, если нет MainButton) ── */
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:30;padding:12px 16px calc(12px + var(--safe-b));
+  background:linear-gradient(180deg,transparent,rgba(10,11,20,.94) 30%);backdrop-filter:blur(14px);
+  transform:translateY(120%);transition:transform .28s cubic-bezier(.2,.9,.3,1.2)}
+.bar.show{transform:none}
+.bar button{width:100%;padding:16px;border-radius:16px;border:none;font-size:15px;font-weight:900;
+  background:linear-gradient(135deg,var(--ok),#3ef09a);color:#04240f;cursor:pointer;
+  box-shadow:0 10px 30px #22d47b40}
+.bar button:disabled{background:var(--card2);color:var(--muted);box-shadow:none}
+
+/* ── экран успеха ── */
+.done{position:fixed;inset:0;z-index:60;display:none;place-items:center;text-align:center;
+  background:rgba(10,11,20,.97);backdrop-filter:blur(8px);padding:32px}
+.done.show{display:grid}
+.done .tick{width:88px;height:88px;border-radius:50%;margin:0 auto 20px;display:grid;place-items:center;
+  font-size:44px;background:linear-gradient(135deg,var(--ok),#3ef09a);animation:bounce .6s}
+@keyframes bounce{0%{transform:scale(0)}55%{transform:scale(1.18)}100%{transform:scale(1)}}
+.done h2{margin:0 0 8px;font-size:22px;font-weight:900}
+.done p{margin:0;color:var(--muted);font-size:14px;line-height:1.6}
+canvas#cf{position:fixed;inset:0;z-index:61;pointer-events:none;display:none}
+
+.skel{border-radius:var(--r);height:78px;background:linear-gradient(90deg,var(--card) 25%,var(--card2) 50%,var(--card) 75%);
+  background-size:200% 100%;animation:sh 1.3s infinite}
+@keyframes sh{to{background-position:-200% 0}}
+.empty{text-align:center;color:var(--muted);font-size:13px;padding:26px 0}
+</style>
+</head>
+<body>
+<div class="aurora"><i></i><i></i><i></i></div>
+
+<header>
+  <div class="brand">
+    <div class="logo">🎮</div>
+    <div>
+      <h1>GAMECARD_KG</h1>
+      <p>Пополнение игровых аккаунтов</p>
+    </div>
+    <div class="chips">
+      <span class="chip gold" id="tierChip">🥉 Bronze</span>
+    </div>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="slide s1"><span class="tag">PSN</span><h3>PlayStation Store</h3><p>Пополнение кошелька и подписки PS Plus всех регионов</p></div>
+  <div class="slide s2"><span class="tag">XBOX</span><h3>Game Pass Ultimate</h3><p>Сотни игр по подписке — активируем за 15 минут</p></div>
+  <div class="slide s3"><span class="tag">−10%</span><h3>Промокод WELCOME</h3><p>Скидка на первый заказ. Введите код в корзине</p></div>
+</div>
+
+<div class="tabs" id="tabs"></div>
+
+<section>
+  <div id="regionWrap" hidden>
+    <div class="lbl">Регион аккаунта</div>
+    <div class="regions" id="regions"></div>
+  </div>
+
+  <div class="lbl" id="gridLbl">Номинал</div>
+  <div id="gridWrap"><div class="grid"><div class="skel"></div><div class="skel"></div><div class="skel"></div><div class="skel"></div></div></div>
+
+  <div class="custom" id="customWrap" hidden>
+    <input id="customVal" type="number" inputmode="numeric" placeholder="Свой номинал (кратно 10)">
+    <button class="btn pri" id="customAdd">Добавить</button>
+  </div>
+
+  <div class="lbl">Корзина</div>
+  <div class="cart" id="cart"><div class="empty">Корзина пуста — выберите товар выше</div></div>
+
+  <div class="promo">
+    <input id="promo" placeholder="ПРОМОКОД" maxlength="24" autocomplete="off">
+    <button class="btn" id="promoBtn">Применить</button>
+  </div>
+
+  <div class="sum" id="sum" hidden>
+    <div class="sl"><span>Товары</span><b id="sSub">0</b></div>
+    <div class="sl disc" id="sDiscRow" hidden><span>Скидка <span id="sPromo"></span></span><b id="sDisc">0</b></div>
+    <div class="sl" id="sBonusRow" hidden><span>Бонусами</span><b id="sBonus">0</b></div>
+    <div class="sl tot"><span>К оплате</span><b id="sTot">0</b></div>
+  </div>
+
+  <div class="note">
+    ⚠️ <b>Проверьте регион аккаунта.</b> Код активируется только в том регионе,
+    в котором зарегистрирован ваш аккаунт. Менеджер перепроверит перед выдачей.
+    <br><br>💳 Цены ориентировочные — итоговую сумму подтвердит менеджер по курсу на момент заказа.
+  </div>
+</section>
+
+<div class="bar" id="bar"><button id="submit" disabled>Оформить заявку</button></div>
+
+<div class="done" id="done">
+  <div>
+    <div class="tick">✓</div>
+    <h2>Заявка отправлена!</h2>
+    <p>Менеджер проверит наличие и свяжется с вами в чате.<br>Не оплачивайте до подтверждения.</p>
+  </div>
+</div>
+<canvas id="cf"></canvas>
+
+<script>
+"use strict";
+const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+if (tg) { tg.ready(); tg.expand(); try { tg.enableClosingConfirmation(); } catch(e){} }
+const hap = (t) => { try { if(!tg) return;
+  if (t === 'sel') tg.HapticFeedback.selectionChanged();
+  else if (t === 'ok') tg.HapticFeedback.notificationOccurred('success');
+  else if (t === 'err') tg.HapticFeedback.notificationOccurred('error');
+  else tg.HapticFeedback.impactOccurred(t || 'light'); } catch(e){} };
+
+/* ═══ прайс по умолчанию — перекрывается prices.json ═══ */
+let P = {
+  sign: "сом", round_to: 10,
+  rates: {USD:87, EUR:95, TRY:2.10, PLN:22, GBP:112, AED:23.7, KZT:0.17, RUB:0.95, KGS:1},
+  regions: {
+    "USA":{currency:"USD",flag:"🇺🇸"}, "Турция":{currency:"TRY",flag:"🇹🇷"},
+    "Польша":{currency:"PLN",flag:"🇵🇱"}, "UK":{currency:"GBP",flag:"🇬🇧"},
+    "ОАЭ":{currency:"AED",flag:"🇦🇪"}, "Казахстан":{currency:"KZT",flag:"🇰🇿"},
+    "Россия":{currency:"RUB",flag:"🇷🇺"}, "Германия":{currency:"EUR",flag:"🇩🇪"}
+  },
+  markups: {ps:18, xbox:18, steam:15, sub:22, coin:25},
+  catalog: []
+};
+
+const DENOMS = { ps:[50,100,250,500,1000,2000,5000], xbox:[50,80,100,200,300,500,1000], steam:[50,100,200,500,1000] };
+const HOT    = { ps:[100,500], xbox:[100,300], steam:[100,500] };
+const TABS = [
+  {k:"ps",    t:"PlayStation", e:"🎮", glow:"#2e6ff2"},
+  {k:"xbox",  t:"Xbox",        e:"💚", glow:"#16c60c"},
+  {k:"steam", t:"Steam",       e:"🖥", glow:"#66c0f4"},
+  {k:"sub",   t:"Подписки",    e:"👑", glow:"#ffb020"},
+  {k:"coin",  t:"Игровая валюта", e:"💎", glow:"#ff4d8d"}
+];
+
+let tab = "ps", region = "USA", cart = [], promo = null, loy = {balance:0, tier_title:"🥉 Bronze"};
+
+/* ═══ утилиты ═══ */
+const money = (v) => Math.round(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") + " " + P.sign;
+const glowOf = (k) => (TABS.find(t => t.k === k) || {}).glow || "#6c5ce7";
+
+function priceOf(platform, reg, denom) {
+  const r = P.regions[reg];
+  if (!r) return null;
+  const rate = P.rates[r.currency];
+  if (!rate) return null;
+  const mk = P.markups[platform] != null ? P.markups[platform] : 18;
+  const step = P.round_to || 10;
+  return Math.ceil(denom * rate * (1 + mk / 100) / step) * step;
+}
+
+/* ═══ отрисовка ═══ */
+function renderTabs() {
+  document.getElementById("tabs").innerHTML = TABS.map(t =>
+    `<div class="tab ${t.k === tab ? "on" : ""}" data-k="${t.k}">${t.e} ${t.t}</div>`).join("");
+  document.querySelectorAll(".tab").forEach(el => el.onclick = () => {
+    tab = el.dataset.k; hap('sel'); renderTabs(); renderBody();
+  });
+}
+
+function renderRegions() {
+  const wrap = document.getElementById("regionWrap");
+  const isCard = ["ps", "xbox", "steam"].includes(tab);
+  wrap.hidden = !isCard;
+  if (!isCard) return;
+  document.getElementById("regions").innerHTML = Object.entries(P.regions).map(([name, r]) =>
+    `<div class="rg ${name === region ? "on" : ""}" data-r="${name}">${r.flag} ${name}<span class="cur">${r.currency}</span></div>`).join("");
+  document.querySelectorAll(".rg").forEach(el => el.onclick = () => {
+    region = el.dataset.r; hap('sel'); renderRegions(); renderGrid();
+  });
+}
+
+function renderGrid() {
+  const wrap = document.getElementById("gridWrap");
+  const lbl = document.getElementById("gridLbl");
+  const custom = document.getElementById("customWrap");
+  const glow = glowOf(tab);
+
+  if (["ps", "xbox", "steam"].includes(tab)) {
+    lbl.textContent = "Номинал · " + (P.regions[region] ? P.regions[region].currency : "");
+    custom.hidden = false;
+    const hot = HOT[tab] || [];
+    wrap.innerHTML = `<div class="grid">` + (DENOMS[tab] || []).map((d, i) => {
+      const p = priceOf(tab, region, d);
+      const badge = hot.includes(d) ? `<span class="badge hit">ХИТ</span>` : "";
+      return `<div class="card" data-d="${d}" style="--glow:${glow};animation-delay:${i * .035}s">
+        ${badge}<div class="den">${d}<small>${P.regions[region] ? P.regions[region].currency : ""}</small></div>
+        <div class="price">${p ? money(p) : "по запросу"}</div></div>`;
+    }).join("") + `</div>`;
+    wrap.querySelectorAll(".card").forEach(el => el.onclick = () => {
+      const d = +el.dataset.d;
+      addToCart({ type: "card", platform: tab, region, denom: d, qty: 1,
+                  title: TABS.find(t => t.k === tab).t + " " + d + " " + P.regions[region].currency,
+                  price: priceOf(tab, region, d) });
+      el.classList.add("on"); setTimeout(() => el.classList.remove("on"), 400); hap('medium');
+    });
+  } else {
+    lbl.textContent = tab === "sub" ? "Подписки" : "Игровая валюта";
+    custom.hidden = true;
+    const items = (P.catalog || []).filter(i => i.group === tab);
+    if (!items.length) { wrap.innerHTML = `<div class="empty">Раздел скоро наполнится 🚧</div>`; return; }
+    wrap.innerHTML = `<div class="items">` + items.map((it, i) => `
+      <div class="item" data-c="${it.code}" style="--glow:${glow};animation-delay:${i * .04}s">
+        ${it.badge ? `<span class="badge best">${it.badge}</span>` : ""}
+        <div class="ic">${it.emoji || "🎁"}</div>
+        <div class="tx"><b>${it.title}</b><span>${it.subtitle || ""}</span></div>
+        <div class="pr">${money(it.fixed_kgs)}</div>
+      </div>`).join("") + `</div>`;
+    wrap.querySelectorAll(".item").forEach(el => el.onclick = () => {
+      const it = items.find(x => x.code === el.dataset.c);
+      addToCart({ type: "item", item_code: it.code, qty: 1,
+                  title: it.title + " — " + (it.subtitle || ""), price: it.fixed_kgs });
+      el.classList.add("on"); setTimeout(() => el.classList.remove("on"), 400); hap('medium');
+    });
+  }
+}
+
+function keyOf(l) { return l.type === "item" ? "i:" + l.item_code : "c:" + l.platform + ":" + l.region + ":" + l.denom; }
+
+function addToCart(line) {
+  const k = keyOf(line);
+  const found = cart.find(x => keyOf(x) === k);
+  if (found) found.qty++; else cart.push(line);
+  renderCart(); recalc();
+}
+
+function renderCart() {
+  const box = document.getElementById("cart");
+  if (!cart.length) { box.innerHTML = `<div class="empty">Корзина пуста — выберите товар выше</div>`; return; }
+  box.innerHTML = cart.map((l, i) => `
+    <div class="crow">
+      <div class="cn"><b>${l.title}</b><span>${l.price ? money(l.price) + " × " + l.qty : "цена по запросу"}</span></div>
+      <div class="qty"><button data-m="${i}">−</button><span>${l.qty}</span><button data-p="${i}">+</button></div>
+      <button class="rm" data-x="${i}">✕</button>
+    </div>`).join("");
+  box.querySelectorAll("[data-p]").forEach(b => b.onclick = () => { cart[+b.dataset.p].qty++; hap('light'); renderCart(); recalc(); });
+  box.querySelectorAll("[data-m]").forEach(b => b.onclick = () => {
+    const i = +b.dataset.m; cart[i].qty--; if (cart[i].qty < 1) cart.splice(i, 1);
+    hap('light'); renderCart(); recalc();
+  });
+  box.querySelectorAll("[data-x]").forEach(b => b.onclick = () => { cart.splice(+b.dataset.x, 1); hap('err'); renderCart(); recalc(); });
+}
+
+function recalc() {
+  const sub = cart.reduce((s, l) => s + (l.price || 0) * l.qty, 0);
+  let disc = 0;
+  if (promo) disc = promo.kind === "PCT" ? Math.round(sub * promo.value / 100) : Math.min(promo.value, sub);
+  const bonus = Math.min(loy.balance || 0, Math.round((sub - disc) * 0.3));
+  const tot = Math.max(0, sub - disc - bonus);
+
+  document.getElementById("sum").hidden = !cart.length;
+  document.getElementById("sSub").textContent = money(sub);
+  document.getElementById("sDiscRow").hidden = !disc;
+  document.getElementById("sPromo").textContent = promo ? "· " + promo.code : "";
+  document.getElementById("sDisc").textContent = "−" + money(disc);
+  document.getElementById("sBonusRow").hidden = !bonus;
+  document.getElementById("sBonus").textContent = "−" + money(bonus);
+  document.getElementById("sTot").textContent = money(tot);
+
+  const label = cart.length ? "Оформить заявку · " + money(tot) : "Корзина пуста";
+  const btn = document.getElementById("submit");
+  btn.textContent = label; btn.disabled = !cart.length;
+  document.getElementById("bar").classList.toggle("show", !!cart.length);
+
+  if (tg && tg.MainButton) {
+    if (cart.length) { tg.MainButton.setText(label); tg.MainButton.show(); tg.MainButton.enable(); }
+    else tg.MainButton.hide();
+  }
+  return { sub, disc, bonus, tot };
+}
+
+function renderBody() { renderRegions(); renderGrid(); }
+
+/* ═══ отправка ═══ */
+function submitOrder() {
+  if (!cart.length) return;
+  const t = recalc();
+  const payload = {
+    v: 1, action: "order", source: "webapp",
+    items: cart.map(l => l.type === "item"
+      ? { type: "item", item_code: l.item_code, qty: l.qty }
+      : { type: "card", platform: l.platform, region: l.region, denom: l.denom, qty: l.qty }),
+    promo: promo ? promo.code : "",
+    use_bonus: t.bonus > 0,
+    client_total: t.tot
+  };
+  const data = JSON.stringify(payload);
+  hap('ok');
+  if (tg && typeof tg.sendData === "function") {
+    try { tg.disableClosingConfirmation(); } catch (e) {}
+    document.getElementById("done").classList.add("show");
+    confetti();
+    setTimeout(() => { try { tg.sendData(data); } catch (e) { fallback(data); } }, 550);
+  } else {
+    fallback(data);
+  }
+}
+
+function fallback(data) {
+  document.getElementById("done").classList.remove("show");
+  alert("Откройте магазин кнопкой «🛍 Магазин» под полем ввода в чате с ботом — тогда заявка уйдёт автоматически.");
+  console.log(data);
+}
+
+/* ═══ промокод (проверка на стороне бота, здесь — предпросмотр) ═══ */
+const KNOWN_PROMOS = { WELCOME: { kind: "PCT", value: 10 }, GAMER: { kind: "PCT", value: 5 } };
+document.getElementById("promoBtn").onclick = () => {
+  const el = document.getElementById("promo");
+  const code = el.value.trim().toUpperCase();
+  el.classList.remove("ok", "bad");
+  if (!code) { promo = null; recalc(); return; }
+  const p = KNOWN_PROMOS[code];
+  if (p) { promo = { code, kind: p.kind, value: p.value }; el.classList.add("ok"); hap('ok'); }
+  else   { promo = { code, kind: "PCT", value: 0 }; el.classList.add("bad"); hap('err'); }
+  recalc();
+};
+
+document.getElementById("customAdd").onclick = () => {
+  const el = document.getElementById("customVal");
+  const v = parseInt(el.value, 10);
+  if (!v || v < 10 || v > 10000 || v % 10) { el.focus(); hap('err'); return; }
+  addToCart({ type: "card", platform: tab, region, denom: v, qty: 1,
+              title: TABS.find(t => t.k === tab).t + " " + v + " " + P.regions[region].currency,
+              price: priceOf(tab, region, v) });
+  el.value = ""; hap('ok');
+};
+document.getElementById("submit").onclick = submitOrder;
+
+/* ═══ конфетти ═══ */
+function confetti() {
+  const c = document.getElementById("cf"); c.style.display = "block";
+  const x = c.getContext("2d");
+  c.width = innerWidth; c.height = innerHeight;
+  const cols = ["#6c5ce7", "#22d47b", "#ffb020", "#ff4d8d", "#2e6ff2"];
+  const ps = Array.from({ length: 90 }, () => ({
+    x: Math.random() * c.width, y: -20 - Math.random() * c.height * .5,
+    r: 3 + Math.random() * 5, vy: 2 + Math.random() * 4, vx: -1.5 + Math.random() * 3,
+    a: Math.random() * 6.28, c: cols[(Math.random() * cols.length) | 0]
+  }));
+  let f = 0;
+  (function loop() {
+    x.clearRect(0, 0, c.width, c.height);
+    ps.forEach(p => {
+      p.y += p.vy; p.x += p.vx; p.a += .1;
+      x.save(); x.translate(p.x, p.y); x.rotate(p.a);
+      x.fillStyle = p.c; x.fillRect(-p.r, -p.r / 2, p.r * 2, p.r);
+      x.restore();
+    });
+    if (++f < 170) requestAnimationFrame(loop); else c.style.display = "none";
+  })();
+}
+
+/* ═══ старт ═══ */
+(async function init() {
+  // подтягиваем актуальный прайс, если админ выгрузил prices.json рядом с index.html
+  try {
+    const r = await fetch("./prices.json?" + Date.now(), { cache: "no-store" });
+    if (r.ok) { const j = await r.json(); P = Object.assign(P, j); }
+  } catch (e) {}
+
+  // бонусы/уровень: бот передаёт их в ?b=<баланс>&t=<индекс тира>
+  // (а для ссылок t.me/bot/app — в start_param вида b400_t1)
+  try {
+    const tiers = ["🥉 Bronze", "🥈 Silver", "🥇 Gold", "💎 Platinum"];
+    const qs = new URLSearchParams(location.search);
+    const sp = (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) || "";
+    const b = qs.get("b") != null ? qs.get("b") : (/b(\d+)/.exec(sp) || [])[1];
+    const t = qs.get("t") != null ? qs.get("t") : (/t(\d)/.exec(sp) || [])[1];
+    if (b != null) loy.balance = +b || 0;
+    if (t != null) loy.tier_title = tiers[+t] || tiers[0];
+  } catch (e) {}
+  document.getElementById("tierChip").textContent =
+    loy.balance > 0 ? loy.tier_title + " · " + money(loy.balance) : loy.tier_title;
+
+  renderTabs(); renderBody(); renderCart(); recalc();
+
+  if (tg && tg.MainButton) {
+    tg.MainButton.setParams({ color: "#22d47b", text_color: "#04240f" });
+    tg.MainButton.onClick(submitOrder);
+  }
+  if (tg && tg.BackButton) {
+    tg.BackButton.onClick(() => tg.close());
+  }
+})();
+</script>
+</body>
+</html>
